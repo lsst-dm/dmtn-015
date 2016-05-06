@@ -8,9 +8,11 @@ Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, w
 
 .. math::
   z_i({\bf r}) = \int \! \phi_i({\bf r}, {\bf s}) \, f({\bf s}) \, d{\bf s}
+  :label: eq_psf_definition
 
 We assume that all images have already been resampled to a common coordinate system, and have Gaussian noise described by a covariance matrix :math:`C_i({\bf r}, {\bf s})`.  Because astronomical images typically have approximately uncorrelated noise only in their original coordinate system, we should not assume that these covariance matrices are diagonal.
 
+This notation describes images as continuous functions of position.  This is simply a notational convenience; because we are concerned only with well-sampled images, we can assume images can be resampled exactly, and using a continuous variable for the position instead of another index avoids confusion with the index over input images.  Instead, the image-position variables (typically :math:`{\bf r}` and :math:`{\bf }`) should be assumed to take only discrete values when used as arguments for images and covariance matrices.
 
 Lossy Coaddition Algorithms
 ===========================
@@ -61,6 +63,34 @@ Direct coadds are lossy, requiring some trade-off between image quality (PSF siz
 
 PSF-Matched Coadds
 ------------------
+
+In PSF-matched coaddition, input images are convolved by a kernel that matches their PSF to a predefined constant PSF before they are combined.  If :math:`\phi_\mathrm{pm}({\bf r})` is the predefined PSF for the coadd, then the matching kernel :math:`K_i({\bf r}, {\bf s})` is defined such that
+
+.. math::
+  \sum_{\bf u} \! K_i({\bf r}, {\bf u}) \, \phi_i({\bf u}, {\bf s})
+    = \phi_\mathrm{pm}({\bf r}-{\bf s})
+
+Typically :math:`K` is parametrized as a smoothly varying linear combination of basis functions.  The details of fitting it given a target coadd PSF and input image PSF models is beyond the scope of this document.
+
+Because deconvolution is (at best) noisy, convolution with :math:`K_i` will generally increase the size of the PSF.  This highlights the big disadvantage of PSF-matched coadds: the images with the best seeing must be degraded to match a target PSF whose sizes is determined by the worst of the images to be included in the coadd.  Thus PSF-matched coadds must either include only the best-seeing images (sacrificing depth) or suffer from a worst-case coadd PSF.
+
+After PSF-matching, the coadd is constructed in the same way as a direct coadd:
+
+.. math::
+  z_\mathrm{pm}({\bf r}) = \sum_{i \in R({\bf r})} w_i({\bf r}) \,
+      \sum_{\bf u} K_i({\bf r}, {\bf u}) \, z_i({\bf u})
+
+The PSF on the coadd is of course just :math:`\phi_\mathrm{pm}({\bf r})`, and the pixel covariance on the coadd is
+
+.. math::
+  C_\mathrm{pm}({\bf r}, {\bf s}) =
+    \sum_{i \in \left[R({\bf r}) \cap R({\bf s})\right]} \!\!\!
+        w_i({\bf r}) \, w_i({\bf s}) \,
+        \sum_{\bf u} \sum_{\bf v} K_i({\bf r}, {\bf u}) \,
+        K_i({\bf s}, {\bf v}) \,
+        C_i({\bf r}, {\bf s})
+
+Typically, the covariance terms in the uncertainty are simply ignored and only the variance is propagated, though this can result in a signficant misestimation of the uncertainty in measurements made on the coadd.
 
 
 Outlier Rejection and Nonlinear Statistics
