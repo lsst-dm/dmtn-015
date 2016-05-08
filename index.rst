@@ -8,11 +8,13 @@ Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, w
 
 .. math::
   z_i({\bf r}) = \int \! \phi_i({\bf r}, {\bf s}) \, f({\bf s}) \, d{\bf s}
-  :label: eq_psf_definition
+  :label: eq:psf_definition
 
 We assume that all images have already been resampled to a common coordinate system, and have Gaussian noise described by a covariance matrix :math:`C_i({\bf r}, {\bf s})`.  Because astronomical images typically have approximately uncorrelated noise only in their original coordinate system, we should not assume that these covariance matrices are diagonal.
 
 This notation describes images as continuous functions of position.  This is simply a notational convenience; because we are concerned only with well-sampled images, we can assume images can be resampled exactly, and using a continuous variable for the position instead of another index avoids confusion with the index over input images.  Instead, the image-position variables (typically :math:`{\bf r}` and :math:`{\bf }`) should be assumed to take only discrete values when used as arguments for images and covariance matrices.
+
+Throughout this document, we assume the true sky is the same in all input images (i.e. there is no variability).  This is clearly not true in practice, but coaddition algorithms are explicitly focused on capturing only the static sky.
 
 Lossy Coaddition Algorithms
 ===========================
@@ -24,6 +26,7 @@ The simplest way to build a coadd is to simply form a linear combination of the 
 
 .. math::
   z_\mathrm{dir}({\bf r}) = \sum_{i \in R({\bf r})} w_i({\bf r}) \, z_i({\bf r})
+  :label: eq:dir_coadd_def
 
 where :math:`w_i` is an arbitrary weight for each image, defined to sum to one at each point.  We cannot assume the weights are constant over a single input image; this would make it impossible for the weights to sum to one on both sides of a boundary in which the number of input images changes.  It is equally important that the weight function vary only on scales much larger than the size of the PSF; without this it the coadd has no well-defined effective PSF.  The weight can be chosen to optimize some measure of signal-to-noise ratio (SNR) on the coadd, popular choices include
 
@@ -79,6 +82,7 @@ After PSF-matching, the coadd is constructed in the same way as a direct coadd:
 .. math::
   z_\mathrm{pm}({\bf r}) = \sum_{i \in R({\bf r})} w_i({\bf r}) \,
       \sum_{\bf u} K_i({\bf r}, {\bf u}) \, z_i({\bf u})
+  :label: eq_pm_coadd_def
 
 The PSF on the coadd is of course just :math:`\phi_\mathrm{pm}({\bf r})`, and the pixel covariance on the coadd is
 
@@ -95,6 +99,12 @@ Typically, the covariance terms in the uncertainty are simply ignored and only t
 
 Outlier Rejection and Nonlinear Statistics
 ------------------------------------------
+
+A common -- but often misguided -- practice in coaddition is to use a nonlinear statistic to combine pixels, substituting the weighted mean in :eq:`eq:dir_coadd_def` and :eq:`pm_coadd_def` for a median or sigma-clipped mean.  The goal is to reject artifacts without explicitly detecting them on each image; the problem is that this assumes that the pixel values that go into a particular coadd pixel are drawn from distributions with the same mean.
+
+This is not true when input images have different PSFs, as in direct coaddition.  Building a direct coadd with median or any amount of sigma-clipping will typically result in the cores of brighter stars being clipped in the the best seeing images, resulting in a flux-dependent (i.e. ill-defined) PSF.  Even extremely soft (e.g. 10-sigma) clipping is unsafe; the usual Gaussian logic concerning the number of expected outliers is simply invalid when the inputs are not drawn from the same distribution.
+
+The presence of correlated noise means that even PSF-matched coadds cannot be built naively with nonlinear statistics.  In PSF-matched coadds, all pixels at the same point are drawn from distributions that have the same mean, but they are these are not identical distributions.  As a result, nonlinear statistics do not produce an ill-defined PSF when the inputs are PSF-matched, but their outlier rejection properties do not operate as one would naively expect, making it hard to predict how well any statistic will actually perform at eliminating artifacts (or not eliminating valid data).  Nonlinear statistics also make it impossible to correctly propagate uncertainty to coadds, as long as they are used to compute each coadd pixel independently.
 
 
 Exact Coaddition Algorithms
