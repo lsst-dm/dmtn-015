@@ -1,20 +1,53 @@
 :tocdepth: 2
 
 
-Notation
-========
+Notation and Conventions
+========================
 
-Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  Each image is related to the true sky :math:`f({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf s})` by
+Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  We assume that all images have already been resampled to a common coordinate system and common photometric units.Each image is related to the *pixelized* sky :math:`h({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf s})` by
 
 .. math::
-  z_i({\bf r}) = \int \! \phi_i({\bf r}, {\bf s}) \, f({\bf s}) \, d{\bf s}
+  z_i({\bf r}) = \sum_{\bf s} \! \phi_i({\bf r}, {\bf s}) \, h({\bf s})
+    + \mathrm{noise}
   :label: eq:psf_definition
 
-We assume that all images have already been resampled to a common coordinate system, and have Gaussian noise described by a covariance matrix :math:`C_i({\bf r}, {\bf s})`.  Because astronomical images typically have approximately uncorrelated noise only in their original coordinate system, we should not assume that these covariance matrices are diagonal.
+We have defined the PSF here such that it does not include the pixel response function in the common coordinate system, which is instead included in :math:`h` (because all images share the same pixel grid, :math:`h` is still universal).  This does not imply in any way that the pixel response cannot or should not be included in the PSF; separating them here is simply a notational convenience that allows us to write PSF convolution as a discrete sum instead an integral.  The pixelized sky :math:`h` is a purely mathematical construction with no physical interpretation, but it conveniently contains all the information available about the true sky from an image with pixel grid we have chosen.  It can be related to the continuous true sky :math:`f` via convolution with a 2-d Sinc kernel:
 
-This notation describes images as continuous functions of position.  This is simply a notational convenience; because we are concerned only with well-sampled images, we can assume images can be resampled exactly, and using a continuous variable for the position instead of another index avoids confusion with the index over input images.  Instead, the image-position variables (typically :math:`{\bf r}` and :math:`{\bf }`) should be assumed to take only discrete values when used as arguments for images and covariance matrices.
+.. math::
+  h({\bf s}) \equiv \int\! d^2 {\bf r} \; \mathrm{sinc}({\bf r}-{\bf s}) \, f({\bf r})
 
-Throughout this document, we assume the true sky is the same in all input images (i.e. there is no variability).  This is clearly not true in practice, but coaddition algorithms are explicitly focused on capturing only the static sky.
+We assume all images have Gaussian noise described by a covariance matrix :math:`C_i({\bf r}, {\bf s})`.  Because astronomical images typically have approximately uncorrelated noise only in their original coordinate system, we should not assume that the covariance matrices in the common coordinate system are diagonal.
+
+This notation uses function arguments for spatial indices and subscripts for quantities corresponding to different exposures, but this does not imply that the spatial indices are continuous.  The spatial variables (typically :math:`{\bf r}` and :math:`{\bf s}`) should be assumed to take only discrete values, and indeed we will at times use matrix notation for sums over pixels (in which images are vectors, with the spatial index flattened):
+
+.. math::
+  {\bf z}_i = \left[
+    \begin{array}{c}
+      z_i(\{0,0\}) \\
+      z_i(\{0,1\}) \\
+      \vdots \\
+      z_i(\{0,N\}) \\
+      z_i(\{1,0\}) \\
+      z_i(\{1,1\}) \\
+      \vdots \\
+      z_i(\{1,N\}) \\
+      \vdots \\
+      z_i(\{1,N\}) \\
+      z_i(\{N,0\}) \\
+      z_i(\{N,1\}) \\
+      \vdots \\
+      z_i(\{N,N\})
+    \end{array}
+  \right]
+
+In matrix notation, :eq:`eq:psf_definition` is simply
+
+.. math::
+  {\bf z}_i = \boldsymbol{\phi}_i {\bf h}
+
+Note that in matrix notation we continue to use subscripts to refer to exposure indices, not spatial indices; at no point will we use matrix notation to represent a sum over exposure indices.
+
+We assume the true sky is the same in all input images (i.e. there is no variability).  This is clearly not true in practice, but coaddition algorithms are explicitly focused on capturing only the static sky.
 
 Lossy Coaddition Algorithms
 ===========================
@@ -82,7 +115,7 @@ After PSF-matching, the coadd is constructed in the same way as a direct coadd:
 .. math::
   z_\mathrm{pm}({\bf r}) = \sum_{i \in R({\bf r})} w_i({\bf r}) \,
       \sum_{\bf u} K_i({\bf r}, {\bf u}) \, z_i({\bf u})
-  :label: eq_pm_coadd_def
+  :label: eq:pm_coadd_def
 
 The PSF on the coadd is of course just :math:`\phi_\mathrm{pm}({\bf r})`, and the pixel covariance on the coadd is
 
@@ -100,28 +133,241 @@ Typically, the covariance terms in the uncertainty are simply ignored and only t
 Outlier Rejection and Nonlinear Statistics
 ------------------------------------------
 
-A common -- but often misguided -- practice in coaddition is to use a nonlinear statistic to combine pixels, substituting the weighted mean in :eq:`eq:dir_coadd_def` and :eq:`pm_coadd_def` for a median or sigma-clipped mean.  The goal is to reject artifacts without explicitly detecting them on each image; the problem is that this assumes that the pixel values that go into a particular coadd pixel are drawn from distributions with the same mean.
+A common -- but often misguided -- practice in coaddition is to use a nonlinear statistic to combine pixels, substituting the weighted mean in :eq:`eq:dir_coadd_def` and :eq:`eq:pm_coadd_def` for a median or sigma-clipped mean.  The goal is to reject artifacts without explicitly detecting them on each image; the problem is that this assumes that the pixel values that go into a particular coadd pixel are drawn from distributions with the same mean.
 
 This is not true when input images have different PSFs, as in direct coaddition.  Building a direct coadd with median or any amount of sigma-clipping will typically result in the cores of brighter stars being clipped in the the best seeing images, resulting in a flux-dependent (i.e. ill-defined) PSF.  Even extremely soft (e.g. 10-sigma) clipping is unsafe; the usual Gaussian logic concerning the number of expected outliers is simply invalid when the inputs are not drawn from the same distribution.
 
 The presence of correlated noise means that even PSF-matched coadds cannot be built naively with nonlinear statistics.  In PSF-matched coadds, all pixels at the same point are drawn from distributions that have the same mean, but they are these are not identical distributions.  As a result, nonlinear statistics do not produce an ill-defined PSF when the inputs are PSF-matched, but their outlier rejection properties do not operate as one would naively expect, making it hard to predict how well any statistic will actually perform at eliminating artifacts (or not eliminating valid data).  Nonlinear statistics also make it impossible to correctly propagate uncertainty to coadds, as long as they are used to compute each coadd pixel independently.
 
 
-Exact Coaddition Algorithms
-===========================
+Optimal Coaddition Algorithms
+=============================
 
 Likelihood Coadds
 -----------------
 
+An optimal coadd is one that is a :ref:`sufficient statistic <sufficient_statistic>` for the true sky: we can use it to compute the likelihood of a model of the true (static) sky, yielding the exact same computation as if we had computed the joint likelihood of that model over all the input images.  This joint likelihood is thus a natural starting point for deriving an optimal coadd.
+
+The log likelihood of a single input image :math:`{\bf z}_i` is (in matrix notation)
+
+.. math::
+  L_i = -\frac{1}{2}
+    \left[
+      {\bf z}_i - \boldsymbol{\phi}_i{\bf h}_i
+    \right]^T
+    {\bf C}_i^{-1}
+    \left[
+      {\bf z}_i - \boldsymbol{\phi}_i{\bf h}
+    \right]
+
+The joint likelihood for all images is just the product of the per-image liklehoods, since the images are independent.  The joint log likelihood is thus just the sum of the input log likelihoods:
+
+.. math::
+  L = \sum_i L_i
+    = -\frac{1}{2} \sum_i \left[
+          {\bf z}_i - \boldsymbol{\phi}_i{\bf h}
+        \right]^T
+        {\bf C}_i^{-1}
+        \left[
+          {\bf z}_i - \boldsymbol{\phi}_i{\bf h}
+        \right]
+
+By expanding this product, we can identify terms that include different powers of :math:`{\bf h}`:
+
+.. math::
+  L =& -\frac{1}{2} \sum_i {\bf z}_i^T {\bf C}_i^{-1} {\bf z}_i
+    +  {\bf h}^T \left[
+        \sum_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} {\bf z}_i
+      \right]
+    - \frac{1}{2} {\bf h}^T \left[
+        \sum_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} \boldsymbol{\phi}_i
+      \right] {\bf h} \\
+    =& -\frac{k}{2}
+    +  {\bf h}^T \boldsymbol{\Psi}
+    - \frac{1}{2} {\bf h}^T \boldsymbol{\Phi}_i {\bf h}
+
+with
+
+.. math::
+  k =& \sum_i {\bf z}_i^T {\bf C}_i^{-1} {\bf z}_i \\
+  \boldsymbol{\Psi} =&
+    \sum_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} {\bf z}_i \\
+  \boldsymbol{\Phi} =&
+    \sum_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} \boldsymbol{\phi}_i
+
+These three terms represent a coadd of sorts.  :math:`\boldsymbol{\Psi}` is an image-like quantity, and :math:`\boldsymbol{\Phi}` behaves much like an (inverse) pixel covariance matrix.  Together with the scalar :math:`k` these are a sufficient statistic for :math:`{\bf h}`, and hence we can think of them as a form of optimal coadd, albeit one we cannot use in the usual way.  In particular, the covariance-like term :math:`\boldsymbol{\Phi}` does much more than just carry uncertainty information, as it captures what we typically think of as the PSF as well.  We will refer to the combination of :math:`\boldsymbol{\Psi}`, :math:`\boldsymbol{\Phi}`, and :math:`k` as a "likelihood coadd".
+
+The fact that we cannot interpret a likelihood coadd in the same way as other astronomical images is inconvenient, but the real problem lies in its computational cost: :math:`\boldsymbol{\Phi}` is extremely large; while it is sparse, even just its nonzero elements would consume approximately 200GB in single precision for a single-patch 4k :math:`\times` 4k coadd.  While the same is broadly true of any detailed attempt to capture coadd uncertainty, :math:`\boldsymbol{\Phi}` has even more nonzero elements than :math:`{\bf C}_\mathrm{dir}` or :math:`{\bf C}_\mathrm{pm}`, and it plays a much more important role.  Approximating :math:`{\bf C}_\mathrm{dir}` and :math:`{\bf C}_\mathrm{pm}` generally implies incompletely or incorrectly propagating uncertainties, generally by a small amount, while approximating :math:`\boldsymbol{\Phi}` also implies incorrectly modeling the PSF.
+
+
 Decorrelated Coadds
 -------------------
+
+The solution to the first problem of likelihood coadds -- that the images cannot be interpreted in the traditional way -- is to factor :math:`\boldsymbol{\Phi}`.  This is no small task, given the size of :math:`\boldsymbol{\Phi}`, but if it can be done, it also hints at a solution to the more serious computational problems with likelihood coadds.
+
+Specifically, we assume a factorization of the form
+
+.. math::
+  \boldsymbol{\Phi} = \boldsymbol{\phi}_\mathrm{dec}^T
+    {\bf C}_\mathrm{dec}^{-1}
+    \boldsymbol{\phi}_\mathrm{dec}
+  :label: eq:decorrelated_factorization
+
+Where :math:`\boldsymbol{\phi}_\mathrm{dec}` is a compact kernel and :math:`{\bf C}_\mathrm{dec}` is a nearly matrix.  Given that we have identified :math:`\boldsymbol{\Phi}` as representing the (inverse) covariance matrix of a likelihood coadd, this factorization essentially represents an attempt to *decorrelate* the noise on the likelihood coadd.  This is not quite sufficient, however; we also need to simultaneously solve for :math:`{\bf z}_\mathrm{dec}`` in
+
+.. math::
+  \boldsymbol{\Psi} = \boldsymbol{\phi}_\mathrm{dec}^T
+    {\bf C}_\mathrm{dec}^{-1} {\bf z}_\mathrm{dec}
+  :label: eq:decorrelated_coadd
+
+As the notation implies, this allows us to rewrite the joint log likelihood as
+
+.. math:: L = -\frac{1}{2}
+  \left[
+    {\bf z}_\mathrm{dec} - \boldsymbol{\phi}_\mathrm{dec} {\bf h}
+  \right]^T
+  {\bf C}_\mathrm{dec}^{-1}
+  \left[
+    {\bf z}_\mathrm{dec} - \boldsymbol{\phi}_\mathrm{dec} {\bf h}
+  \right]
+
+This identifies :math:`{\bf z}_\mathrm{dec}` as the decorrelated coadd image, :math:`{\bf C}_\mathrm{dec}` as its covariance matrix, and :math:`\boldsymbol{\phi}_\mathrm{dec}` as its PSF.  These can be used in exactly the same way as the corresponding single-exposure quantities.  As such, this is essentially the ideal coadd: it is formally optimal, can be used in the same way as any standard image, and makes no restrictive assumptions about the input images.
+
+The problem is of course the computational expense.  Despite the fact that we have derived the decorrelated coadd from the likelihood coadd, we do not necessarily need to produce a full likelihood coadd first; it may be possible to devise an algorithm that factors :math:`\boldsymbol{\Phi}` in small regions as it is constructed.  And the decorrelated coadd quantities :math:`{\bf C}_\mathrm{dec}` and :math:`\boldsymbol{\phi}_\mathrm{dec}` may be much more amenable to compression than :math:`\boldsymbol{\Phi}`.
+
+Because we have merely specified that :math:`{\bf C}_\mathrm{dec}` be "nearly" diagonal, this decomposition is not unique, and we have considerable flexibility to move power between :math:`\boldsymbol{\phi}_\mathrm{dec}` to make computation, storage, and use more efficient (without any change in the formal optimality).  Generally speaking, though, we want these quantities to mimic their standard image counterparts:
+
+- We want :math:`{\bf C}_\mathrm{dec}` to be close to diagonal, and to capture small-scale changes in the variance due to bright objects.
+- We want :math:`\boldsymbol{\phi}_\mathrm{dec}` to be compact and to vary smoothly (and slowly) over the image, to allow us to approximate the PSF as spatially constant over the scale of an object.
+
+These are generally competing goals, as can be seen from the limiting cases (which are not necessarily solutions, especially when :eq:`eq:decorrelated_coadd` is considered)
+
+.. math:
+  {\bf C}_\mathrm{dec} =& \boldsymbol{\Phi} \\
+  \boldsymbol{\phi}_\mathrm{dec} =& {\bf I}
+
+and
+
+.. math:
+  {\bf C}_\mathrm{dec} =& {\bf I} \\
+  \boldsymbol{\phi}_\mathrm{dec} =& \boldsymbol{\Phi}^{1/2}
+
+The former has a constant delta function PSF (recall that the pixel response is still embedded in the model) and highly correlated noise; the latter has white, uncorrelated noise and a non-compact PSF that can vary significantly from pixel to pixel.  Nevertheless, intuition suggests that it should be possible to achieve a solution in which the effective PSF is compact and fully continuous or piecewise continuous over large areas while the uncertainty is nondiagonal only in the neighborhood of boundary regions where the number of input images changes.
+
+In addition to being familiar and hence convenient for downstream processing, optimizing these criteria should also make storage of :math:`{\bf C}_\mathrm{dec}` and :math:`\boldsymbol{\phi}_\mathrm{dec}` much more efficient.  Depending on how close to diagonal we can make it, :math:`{\bf C}_\mathrm{dec}` could require little more storage than the coadd image itself.  If we impose a continuous :math:`\boldsymbol{\phi}_\mathrm{dec}`, we can represent it as an interpolated function in essentially the same way we represent per-exposure PSF models.
+
+Unfortunately, a general algorithm for computing the decorrelation factorization does not yet exist, making decorrelated coadds a mostly theoretical concept at present.  Some initial steps towards developing such an algorithm will be discussed in later sections.
+
 
 Kaiser Coadds
 -------------
 
+If the input images to a likelihood coadd meet certain restrictive conditions, an algorithm developed by [Kaiser2002]_ (and rediscovered by [Zackay2015]_) can be used to build decorrelated coadd.  These conditions include:
+
+- The noise in the input images must be white and uncorrelated.
+- The PSFs of the input images must (individually) be spatially constant.
+- The input images have no missing pixels, and the coadd area does not include any boundaries where the number of input images changes.
+
+Under these conditions, :math:`\boldsymbol{\Phi}` has no spatial variation, giving it a particularly simple form in Fourier space:
+
+.. math::
+  \tilde{\Phi}({\bf u}, {\bf v})
+    = \delta({\bf u}, {\bf v}) \sum_i \frac{
+        \tilde{\phi}_i({\bf u}) \, \tilde{\phi}_i({\bf v})
+      }{
+        C_i
+      }
+    = \delta({\bf u}, {\bf v}) \sum_i \frac{
+        \left|\tilde{\phi}_i({\bf u})\right|^2
+      }{
+        C_i
+      }
+
+(recall that :math:`C_i` is now just a scalar, as the variance is constant and there is no covariance).  Recognizing that the matrix products in :eq:`eq:decorrelated_factorization` are just convolutions when the products are spatially constant, the Fourier-space equivalent for Kaiser coadds is
+
+.. math::
+  \tilde{\Phi}({\bf u}, {\bf v}) =
+    \tilde{\phi}_\mathrm{ksr}({\bf u})
+    \,
+    \left[ C_\mathrm{ksr}^{-1} \, \delta({\bf u}, {\bf v}) \right]
+    \,
+    \tilde{\phi}_\mathrm{ksr}({\bf v})
+
+The solution is trivial (and unique, assuming a normalized PSF):
+
+.. math::
+  \tilde{\phi}_\mathrm{ksr}({\bf u}) =&
+    \sqrt{
+      \frac{
+        \sum_i \left|\tilde{\phi}_i({\bf u})\right|^2 \, C_i^{-1}
+      }{
+        \sum_i C_i^{-1}
+      }
+    }\\
+  C_\mathrm{ksr} =& \frac{1}{\sum_i C_i^{-1}}
+
+The equivalent for \boldsymbol{\Psi} and :eq:`eq:decorrelated_coadd` is
+
+.. math::
+  \tilde{\Psi}({\bf u}) = \sum_i
+    \frac{
+      \tilde{\phi}^*_i({\bf u}) \, \tilde{z}({\bf u})
+    } {
+      C_i
+    }
+  =
+  \tilde{\phi}_\mathrm{ksr}({\bf u}) \,
+    C_\mathrm{ksr}^{-1} \, \tilde{z}_\mathrm{ksr}({\bf u})
+
+with solution
+
+.. math::
+  \tilde{z}_\mathrm{ksr}({\bf u}) =
+    \frac{
+      \sum_i \tilde{\phi}^*_i({\bf u}) \, \tilde{z}_i({\bf u}) \, C_i^{-1}
+    }{
+      \sqrt{
+        \sum_i \left| \tilde{\phi}_i({\bf u}) \right|^2 \, C_i^{-1}
+      }
+    }
+
+The problem with the Kaiser algorithm is its assumptions, which are simply invalid for any realistic coadd.  While the noise in an input image may be white in the neighborhood of faint sources, most images contain brighter objects (and faint objects near brigher objects as well).  And it is never uncorrelated once the image has been resampled to the coadd coordinate system.  The noise assumptions by themselves are not too restrictive, however; the Kaiser algorithm is not optimal when these conditions are not met, but we only care deeply about optimality in the neighborhood of faint sources.  And ignoring additional covariance due to warping is no different from our usual approach with direct coadds.
+
+The assumptions that the PSFs and input image set are fixed is more problematic, but this still leaves room for the Kaiser algorithm to be used to build "per object" coadds, in which we build separate coadds each small region in the neighborhood of a single object, and reject any input image that do not fully cover that region.  This would likely necessitate coadding multiple regions multiple times (for overlapping objects), and it isn't as useful as a traditional coadd (especially considering that it can't be used for detection), but it may still have a role to play.
+
+A more intriguing possibility is that the Kaiser approach could be used as one piece of a larger algorithm to build general decorrelated coadds.  One could imagine an iterative approach to solving :eq:`eq:decorrelated_factorization` and :eq:`eq:decorrelated_coadd` by minimizing a matric such as
+
+.. math::
+  q = \left|
+        \boldsymbol{\Phi}
+        - \boldsymbol{\phi}_\mathrm{dec}^T
+          {\bf C}_\mathrm{dec}^{-1}
+          \boldsymbol{\phi}_\mathrm{dec}
+      \right|
+    + \left|
+        \boldsymbol{\Psi}
+        - \boldsymbol{\phi}_\mathrm{dec}^T
+          {\bf C}_\mathrm{dec}^{-1}
+          {\bf z}_\mathrm{dec}
+      \right|
+    + \lambda \left|
+        {\bf C}_\mathrm{dec}^{-1}
+          - \mathrm{diag}({\bf C}_\mathrm{dec}^{-1})
+      \right|
+
+where :math:`\boldsymbol{\phi}_\mathrm{dec}` is parametrized as a smoothly-varying interpolation of a set of kernel basis functions, and :math:`\lambda` controls how strongly off-diagonal elements of :math:`{\bf C}_\mathrm{dec}^{-1}` are penalized.  This is a massive optimization problem if applied to a full coadd patch, but the structure of :math:`\boldsymbol{\Phi}` only indirectly couples pixels that are more than twice the PSF width apart; this suggests we could proceed by iteratively solving small regions independently -- if we have a good guess at an approximate solution.  The Kaiser algorithm provides exactly this: we can use the Kaiser method to estimate the PSF and a diagonal covariance matrix at multiple points on the image, and then simply interpolate between them to generate our initial guess.  Just imposing the Kaiser PSF (or a small perturbation to it) as the final PSF may also be feasible.  This would only require us to solve for :math:`{\bf C}_\mathrm{dec}^{-1}` and :math:`{\bf z}_\mathrm{dec}`, dramatically reducing the scale of the problem.
+
+
 Constant PSF Coadds
 -------------------
 
+A simple but potentially useful twist on the decorrelatd coadd approach is to decorrelate only to a predefined constant PSF.  This would produce a coadd with many of the benefits of a PSF-matched coadd, but with no seeing restrictions on the input images and a much smaller final PSF.  Like a PSF-matched coadd, significant pixel correlations could remain in this scenario (it is unclear which approach would have more), but the coadd would enable the measurement of consistent colors and could also serve as a template for difference imaging.  Both of these are cases where having improved depth and a smaller PSF in the coadd could be critical.
+
+Having a consistent PSF across bands is the only way to formally measure a consistent color, but using traditional PSF-matched coadds for this makes such measurements much lower SNR than PSF-convolved model fluxes fit independently to each epoch (or even to direct coadds), which are subject to model bias.  If the constant-PSF coadd is instead generated using the decorrelated coadd approach, the SNR of consistent colors could be much more competitive.
+
+The potential gains for difference imaging are even larger: the PSF size on the coadd puts a lower limit on the PSF size of an input exposure that can be differenced in it, which could require us to throw away or degrade our best images simply because we don't have a coadd good enough to difference with it. [#preconvolution]_  Difference imaging algorithms also become dramatically more complex when noise from the template cannot be neglected when compared with the noise in the exposure being differenced; this requires that the template have a large number of exposures.  This is challenging when traditional PSF-matched coaddition is used and the coadd PSF must be optimized along with the depth, and it may be even more challenging if mitigating chromatic PSF effects requires templates binned in airmass or some other approach that effectively adds new degrees of freedom to template generation.
+
+.. [#preconvolution] The "preconvolution" approach to difference imaging decreases this lower limit (possibly to the point where it is unimportant), but is also an unproven technique.
 
 Coadds for Source Detection
 ===========================
