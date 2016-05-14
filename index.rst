@@ -355,7 +355,7 @@ A more intriguing possibility is that the Kaiser approach could be used as one p
           - \mathrm{diag}({\bf C}_\mathrm{dec}^{-1})
       \right|
 
-where :math:`\boldsymbol{\phi}_\mathrm{dec}` is parametrized as a smoothly-varying interpolation of a set of kernel basis functions, and :math:`\lambda` controls how strongly off-diagonal elements of :math:`{\bf C}_\mathrm{dec}^{-1}` are penalized.  This is a massive optimization problem if applied to a full coadd patch, but the structure of :math:`\boldsymbol{\Phi}` only indirectly couples pixels that are more than twice the PSF width apart; this suggests we could proceed by iteratively solving small regions independently -- if we have a good guess at an approximate solution.  The Kaiser algorithm provides exactly this: we can use the Kaiser method to estimate the PSF and a diagonal covariance matrix at multiple points on the image, and then simply interpolate between them to generate our initial guess.  Just imposing the Kaiser PSF (or a small perturbation to it) as the final PSF may also be feasible.  This would only require us to solve for :math:`{\bf C}_\mathrm{dec}^{-1}` and :math:`{\bf z}_\mathrm{dec}`, dramatically reducing the scale of the problem.
+where :math:`\boldsymbol{\phi}_\mathrm{dec}` is parametrized as a smoothly-varying interpolation of a set of kernel basis functions, and :math:`\lambda` controls how strongly off-diagonal elements of :math:`{\bf C}_\mathrm{dec}^{-1}` are penalized.  This is a massive optimization problem if applied to a full coadd patch, but the structure of :math:`\boldsymbol{\Phi}` only indirectly couples pixels that are more than twice the PSF width apart; this suggests we could proceed by iteratively solving small regions independently -- if we have a good guess at an approximate solution.  The Kaiser algorithm provides exactly this: we can use the Kaiser method to estimate the PSF, and a diagonal covariance matrix at multiple points on the image, and then simply interpolate between them to generate our initial guess.  Just imposing the Kaiser PSF (or a small perturbation to it) as the final PSF may also be feasible.  This would only require us to solve for :math:`{\bf C}_\mathrm{dec}^{-1}` and :math:`{\bf z}_\mathrm{dec}`, dramatically reducing the scale of the problem.
 
 
 Constant PSF Coadds
@@ -374,6 +374,84 @@ Coadds for Source Detection
 
 Detection Maps
 --------------
+
+The approach to source detection in LSST is derived from the likelihood of a single isolated point source of flux :math:`\alpha` centered somewhere within pixel :math:`\boldsymbol{\mu}`: [#detect_position_clarify]_
+
+.. math::
+  L = \frac{1}{2} \sum_i \sum_{{\bf r}, {\bf s}}
+        \left[
+          z_i({\bf r}) - \alpha\,\phi_i(\boldsymbol{\mu} - {\bf s})
+        \right]
+        \left[C_i^{-1}({\bf r}, {\bf s}) \right]
+        \left[
+          z_i({\bf s}) - \alpha\,\phi_i(\boldsymbol{\mu} - {\bf s})
+        \right]
+
+At fixed :math:`\boldsymbol{\mu}`, we can solve for :math:`\alpha` by setting the first derivative of :math:`L` to zero:
+
+.. math::
+  \frac{\partial L}{\partial \alpha}
+    = -\sum_{i,{\bf r}, {\bf s}}
+        \left[
+          z_i({\bf r}) - \alpha\,\phi_i(\boldsymbol{\mu} - {\bf s})
+        \right]
+        \left[C_i^{-1}({\bf r}, {\bf s})\right]
+        \phi_i(\boldsymbol{\mu} - {\bf s})
+    = 0
+
+which yields
+
+.. math::
+  \hat{\alpha}(\boldsymbol{\mu})
+    = \frac{
+        \sum_{i,{\bf r},{\bf s}}
+          z_i({\bf r})
+          \left[C_i^{-1}({\bf r}, {\bf s})\right]
+          \phi_i(\boldsymbol{\mu} - {\bf s})
+      }{
+        \sum_{i,{\bf r},{\bf s}}
+          \phi_i(\boldsymbol{\mu} - {\bf r})
+          \left[C_i^{-1}({\bf r}, {\bf s})\right]
+          \phi_i(\boldsymbol{\mu} - {\bf s})
+      }
+    = \frac{
+        \Psi(\boldsymbol{\mu})
+      }{
+        \Phi(\boldsymbol{\mu},\boldsymbol{\mu})
+      }
+
+Similarly, the variance in the flux can be computed from the inverse of the second derivative:
+
+.. math::
+  \sigma_{\alpha}^2(\boldsymbol{\mu})
+    = \left( \frac{\partial^2 L}{\partial \alpha^2} \right)^{-1}
+    = \left(
+        \sum_{i,{\bf r},{\bf s}}
+          \phi_i(\boldsymbol{\mu} - {\bf r})
+          \left[C_i^{-1}({\bf r}, {\bf s})\right]
+          \phi_i(\boldsymbol{\mu} - {\bf s})
+     \right)^{-1}
+    = \left[\Phi(\boldsymbol{\mu},\boldsymbol{\mu})\right]^{-1}
+
+The point-source SNR at position :math:`\boldsymbol{\mu}` is then
+
+.. math::
+  \nu(\boldsymbol{\mu}) \equiv
+  \frac{
+    \hat{\alpha}(\boldsymbol{\mu})
+  }{
+    \sigma_{\alpha}(\boldsymbol{\mu})
+  } =
+    \frac{
+        \Psi(\boldsymbol{\mu})
+      }{
+        \sqrt{\Phi(\boldsymbol{\mu},\boldsymbol{\mu})}
+      }
+
+To detect point sources, we simply threshold on an image of :math:`\boldsymbol{\nu}`, which we can construct from the components of a likelihood coadd with a crucial distinction: we only require the diagonal of :math:`\boldsymbol{\Phi}`, making what had been a computationally infeasible method quite practical.  This holds only because we have assumed an isolated point source, however; optimal detection of extended sources or blended sources would require at least some off-diagonal elements of :math:`\boldsymbol{\Phi}`.  In practice, we instead just look for multiple peaks in above-threshold regions in $\boldsymbol{\nu} as defined above, and bin the image to detect extended low-surface-brightness sources.
+
+.. [#detect_position_clarify] If we had defined the PSF in the usual way, in which it includes the pixel response function, this would instead represent the likelihood that the point source was *exactly* at position :math:`\boldsymbol{\mu}`.  Either interpretation is sufficient for our purposes here.
+
 
 Chi-Squared Coadds
 --------------------
