@@ -1,4 +1,4 @@
-:tocdepth: 2
+:tocdepth: 1
 
 
 Notation and Conventions
@@ -429,16 +429,63 @@ The point-source SNR at position :math:`\boldsymbol{\mu}` is then
       }{
         \sqrt{\Phi(\boldsymbol{\mu},\boldsymbol{\mu})}
       }
+  :label: eq:detection_map
 
 To detect point sources, we simply threshold on :math:`\boldsymbol{\nu}`, which we call a *detection map*.   We can construct this from the components of a likelihood coadd with a crucial simplification: we only require the diagonal of :math:`\boldsymbol{\Phi}`, making what had been a computationally infeasible method quite practical.  This holds only because we have assumed an isolated point source, however; optimal detection of extended sources or blended sources would require at least some off-diagonal elements of :math:`\boldsymbol{\Phi}`.  In practice, we instead just look for multiple peaks in above-threshold regions in $\boldsymbol{\nu} as defined above, and bin the image to detect extended low-surface-brightness sources.
 
 .. [#detect_position_clarify] If we had defined the PSF in the usual way, in which it includes the pixel response function, this would instead represent the likelihood that the point source was *exactly* at position :math:`\mu`.  Either interpretation is sufficient for our purposes here.
 
 
+Optimal Multi-Band Detection
+----------------------------
+
+Just as optimal detection in monochromatic images requires that we konw the signal of interest (a point source with a known PSF), optimal detection over multi-band observations requires that we know both the spectral energy distribution (SED) of the target objects and the bandpass.  More precisely, we need to know the integral of these quantities:
+
+\beta_i = \int S(\lambda) ,\ T_i(\lambda) \, \lambda
+
+where :math:`T_i(\lambda)` is the normalized system response for observation :math:`i` and :math:`S(\lambda)` is the normalized SED of the target source.  The point source likelihood is then
+
+.. math::
+  L =& -\frac{1}{2} \sum_i \sum_{{\bf r}, {\bf s}}
+        \left[
+          z_i({\bf r}) - \alpha\,\beta_i\,\phi_i(\boldsymbol{\mu} - {\bf s})
+        \right]
+        \left[C_i^{-1}({\bf r}, {\bf s}) \right]
+        \left[
+          z_i({\bf s}) - \alpha\,\beta_i\,\phi_i(\boldsymbol{\mu} - {\bf s})
+        \right] \\
+    =& -\frac{k}{2}
+        + \alpha\Psi_{\beta}(\boldsymbol{\mu})
+        - \frac{\alpha^2}{2}\Phi_{\beta}(\boldsymbol{\mu}, \boldsymbol{\mu})
+
+with
+
+.. math::
+  k =& \sum_i {\bf z}_i^T {\bf C}_i^{-1} {\bf z}_i \\
+  \boldsymbol{\Psi}_{\beta} =&
+    \sum_i \beta_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} {\bf z}_i \\
+  \boldsymbol{\Phi}_{\beta}=&
+    \sum_i \beta_i^2 \boldsymbol{\phi}_i^T {\bf C}_i^{-1} \boldsymbol{\phi}_i
+
+As the notation suggests, this is just a likelihood coadd with the inputs reweighted according to the target SED, and we can similarly form a detection map from it:
+
+.. math::
+  \nu_{\beta}(\boldsymbol{\mu}) =
+      \frac{
+          \Psi_{\beta}(\boldsymbol{\mu})
+        }{
+          \sqrt{\Phi_{\beta}(\boldsymbol{\mu},\boldsymbol{\mu})}
+        }
+  :label: eq:multiband_detection
+
+In practice, the differences in throughput for different observations with the same bandpass is small enough to be neglected for detection purposes, and we could thus build :math:`\Phi_{\beta}` and :math:`\Psi_{\beta}` from per-band coadds of the standard :math:`\Phi` and :math:`\Psi`.  This makes it feasible to detect objects with unknown SEDs by quickly constructing detection maps for a library of proposed SEDs, and then merging those detections.
+
 Chi-Squared Coadds
---------------------
+------------------
 
+An alternate approach to multi-band coaddition developed by [Szalay1999]_ is to instead build a coadd that tests the null hypothesis that a pixel is pure sky.  While [Szalay1999]_ does not specify fully how to handle the spatial dimensions, we can combine their method with the likelihood coadd approach above.  This yields a detection map that is exactly the same as :eq:`eq:detection_map`, but with :math:`\Psi` and :math:`\Phi` summed over images from multiple bandpasses.  The probability distribution of :math:`\nu^2` is then a :math:`\chi^2` distribution, allowing the hypothesis test to be carried out by filtering on a monotonic function of the :math:`\nu`.
 
+This is equivalent to setting :math:`\beta_i=1` in :eq:`eq:multiband_detection`, which is not the same as assuming a flat SED; in the background-dominated limit, it is actually the same as assuming that objects have the same SED as the sky.  From this perspective, it is clear that :math:`\chi^2` coadds are not formally optimal for the detection of most sources, but they may be close enough that detection on them with a slightly lower threshold may be more computationally efficient than trying a large library of proposed SEDs.
 
 
 Glossary
