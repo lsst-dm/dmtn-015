@@ -488,6 +488,18 @@ An alternate approach to multi-band coaddition developed by [Szalay1999]_ is to 
 This is equivalent to setting :math:`\beta_i=1` in :eq:`eq:multiband_detection`, which is not the same as assuming a flat SED; in the background-dominated limit, it is actually the same as assuming that objects have the same SED as the sky.  From this perspective, it is clear that :math:`\chi^2` coadds are not formally optimal for the detection of most sources, but they may be close enough that detection on them with a slightly lower threshold may be more computationally efficient than trying a large library of proposed SEDs.
 
 
+Quantitative Comparison
+=======================
+
+.. image:: /_static/comparison.png
+   :target: ../../_static/comparison.png
+   :alt: Comparison of seeing and depth for different coadd algorithms
+
+The figure above shows predicted effective FWHM (calculated from PSF effective area) and 5-sigma point source limiting magnitude for different coadd algorithms.  Each data point in the histograms represents a coadd of 200 exposures, with seeing drawn from a log-normal distribution centered at 0.7 arcseconds and depth drawn from a normal distribution centered around 24.7.  Direct and PSF-matched coadds are weighted to optimize point source SNR.
+
+Note that the direct algorithm actually produces a smaller PSF than the Kaiser algorithm, even when the worst exposures are included (our choice of weight function strongly downweights these images).  This does *not* mean that it contains any more small-scale spatial information than the Kaiser coadd, as it always has lower SNR.  Even so, the improvement from direct to Kaiser algorithm is modest: when all exposures are included in the direct coadd, the Kaiser algorithm is only 0.1 magnitudes deeper.  The improvement from PSF-matched to direct coaddition is substantial in both PSF size and depth, especially when all exposures are included.  Imposing a cut on seeing percentile is clearly important for PSF-matched coaddition, but may not be important for direct coaddition, at least with the above choice of weight function.
+
+
 Glossary
 ========
 
