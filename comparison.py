@@ -138,10 +138,8 @@ class CoaddMetricCalculator(object):
 
     def makePSF(self, fwhm):
         """Create a galsim.GSObject that represents a PSF with the given FWHM.
-
-        For simplicity and speed we just use Gaussian.
         """
-        return galsim.Gaussian(fwhm=fwhm)
+        return galsim.Kolmogorov(fwhm=fwhm)
 
     def buildInputs(self, fwhms, depths):
         """Build input PSFs and variances for a set of input images from their
