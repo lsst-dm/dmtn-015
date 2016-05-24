@@ -4,21 +4,43 @@
 Notation and Conventions
 ========================
 
-Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  We assume that all images have already been resampled to a common coordinate system and common photometric units.Each image is related to the *pixelized* sky :math:`h({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf s})` by
+Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  We assume that all images have already been resampled to a common coordinate system and common photometric units.  Each image is related to the true sky :math:`f({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf s})` by
 
 .. math::
-  z_i({\bf r}) = \sum_{\bf s} \! \phi_i({\bf r}, {\bf s}) \, h({\bf s})
+  z_i({\bf r}) = \int \! d^2{\bf s} \phi_i({\bf r}, {\bf s}) \, f({\bf s})
     + \mathrm{noise}
-  :label: eq:psf_definition
+  :label: eq:psf_definition_continuous
 
-We have defined the PSF here such that it does not include the pixel response function in the common coordinate system, which is instead included in :math:`h` (because all images share the same pixel grid, :math:`h` is still universal).  This does not imply in any way that the pixel response cannot or should not be included in the PSF; separating them here is simply a notational convenience that allows us to write PSF convolution as a discrete sum instead an integral.  The pixelized sky :math:`h` is a purely mathematical construction with no physical interpretation, but it conveniently contains all the information available about the true sky from an image with pixel grid we have chosen.  It can be related to the continuous true sky :math:`f` via convolution with a 2-d Sinc kernel:
+It will be convenient to rewrite this integral as a sum, and hence define the PSF and sky as discrete quantities rather than continuous functions (note that :math:`{\bf r}` already only takes discrete values).  The true :math:`f` has power at arbitrarily high frequencies, so we cannot simply sample it on a grid.  But the PSF does not; we can always choose some grid with points :math:`{\bf t}` upon which we can sample the PSF and exactly reconstruct it with Sinc interpolation:
+
+.. math::
+  \phi_i({\bf r}, {\bf t}) = \sum_{\bf s} \phi_i({\bf r}, {\bf s})
+    \, \mathrm{sinc}({\bf s} - {\bf t})
+
+We can then insert this into :eq:`eq:psf_definition_continuous`, and reorder the sum and integral:
+
+.. math::
+  z_i({\bf r}) = \sum_{\bf t} \phi_i({\bf r}, {\bf t}) \int \! d^2{\bf s} \,
+    \mathrm{sinc}({\bf s} - {\bf t}) \, f({\bf s})
+    + \mathrm{noise}
+
+This lets us identify the *sinc-convolved sky* :math:`h` as
 
 .. math::
   h({\bf s}) \equiv \int\! d^2 {\bf r} \; \mathrm{sinc}({\bf r}-{\bf s}) \, f({\bf r})
 
+Note that :math:`h` contains all in information about the true sky, and hence we can use it instead of :math:`f` to form a discrete analog of :eq:`eq:psf_definition_continuous`:
+
+.. math::
+  z_i({\bf r}) = \sum_s \phi_i({\bf r}, {\bf s}) \, h({\bf s})
+    + \mathrm{noise}
+  :label: eq:psf_definition
+
+We will use this form for the remainder of the paper.
+
 We assume all images have Gaussian noise described by a covariance matrix :math:`C_i({\bf r}, {\bf s})`.  Because astronomical images typically have approximately uncorrelated noise only in their original coordinate system, we should not assume that the covariance matrices in the common coordinate system are diagonal.
 
-This notation uses function arguments for spatial indices and subscripts for quantities corresponding to different exposures, but this does not imply that the spatial indices are continuous.  The spatial variables (typically :math:`{\bf r}` and :math:`{\bf s}`) should be assumed to take only discrete values, and indeed we will at times use matrix notation for sums over pixels (in which images are vectors, with the spatial index flattened):
+This notation uses function arguments for spatial indices and subscripts for quantities corresponding to different exposures, but (as described above) this does not imply that the spatial indices are continuous.  The spatial variables (typically :math:`{\bf r}` and :math:`{\bf s}`) should be assumed to take only discrete values, and indeed we will at times use matrix notation for sums over pixels (in which images are vectors, with the spatial index flattened):
 
 .. math::
   {\bf z}_i = \left[
@@ -375,7 +397,7 @@ Coadds for Source Detection
 Detection Maps
 --------------
 
-The approach to source detection in LSST is derived from the likelihood of a single isolated point source of flux :math:`\alpha` centered somewhere within pixel :math:`\boldsymbol{\mu}`: [#detect_position_clarify]_
+The approach to source detection in LSST is derived from the likelihood of a single isolated point source of flux :math:`\alpha` centered on pixel :math:`\boldsymbol{\mu}`:
 
 .. math::
   L =& -\frac{1}{2} \sum_i \sum_{{\bf r}, {\bf s}}
@@ -433,15 +455,13 @@ The point-source SNR at position :math:`\boldsymbol{\mu}` is then
 
 To detect point sources, we simply threshold on :math:`\boldsymbol{\nu}`, which we call a *detection map*.   We can construct this from the components of a likelihood coadd with a crucial simplification: we only require the diagonal of :math:`\boldsymbol{\Phi}`, making what had been a computationally infeasible method quite practical.  This holds only because we have assumed an isolated point source, however; optimal detection of extended sources or blended sources would require at least some off-diagonal elements of :math:`\boldsymbol{\Phi}`.  In practice, we instead just look for multiple peaks in above-threshold regions in $\boldsymbol{\nu} as defined above, and bin the image to detect extended low-surface-brightness sources.
 
-.. [#detect_position_clarify] If we had defined the PSF in the usual way, in which it includes the pixel response function, this would instead represent the likelihood that the point source was *exactly* at position :math:`\mu`.  Either interpretation is sufficient for our purposes here.
-
 
 Optimal Multi-Band Detection
 ----------------------------
 
 Just as optimal detection in monochromatic images requires that we konw the signal of interest (a point source with a known PSF), optimal detection over multi-band observations requires that we know both the spectral energy distribution (SED) of the target objects and the bandpass.  More precisely, we need to know the integral of these quantities:
 
-\beta_i = \int S(\lambda) ,\ T_i(\lambda) \, \lambda
+\beta_i = \int S(\lambda) ,\ T_i(\lambda) \, d\lambda
 
 where :math:`T_i(\lambda)` is the normalized system response for observation :math:`i` and :math:`S(\lambda)` is the normalized SED of the target source.  The point source likelihood is then
 
