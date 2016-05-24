@@ -147,7 +147,7 @@ The PSF on the coadd is of course just :math:`\phi_\mathrm{pm}({\bf r})`, and th
         w_i({\bf r}) \, w_i({\bf s}) \,
         \sum_{\bf u} \sum_{\bf v} K_i({\bf r}, {\bf u}) \,
         K_i({\bf s}, {\bf v}) \,
-        C_i({\bf r}, {\bf s})
+        C_i({\bf u}, {\bf v})
 
 Typically, the covariance terms in the uncertainty are simply ignored and only the variance is propagated, though this can result in a signficant misestimation of the uncertainty in measurements made on the coadd.
 
@@ -175,7 +175,7 @@ The log likelihood of a single input image :math:`{\bf z}_i` is (in matrix notat
 .. math::
   L_i = -\frac{1}{2}
     \left[
-      {\bf z}_i - \boldsymbol{\phi}_i{\bf h}_i
+      {\bf z}_i - \boldsymbol{\phi}_i{\bf h}
     \right]^T
     {\bf C}_i^{-1}
     \left[
@@ -206,7 +206,7 @@ By expanding this product, we can identify terms that include different powers o
       \right] {\bf h} \\
     =& -\frac{k}{2}
     +  {\bf h}^T \boldsymbol{\Psi}
-    - \frac{1}{2} {\bf h}^T \boldsymbol{\Phi}_i {\bf h}
+    - \frac{1}{2} {\bf h}^T \boldsymbol{\Phi} {\bf h}
 
 with
 
@@ -264,15 +264,15 @@ Because we have merely specified that :math:`{\bf C}_\mathrm{dec}` be "nearly" d
 
 These are generally competing goals, as can be seen from the limiting cases (which are not necessarily solutions, especially when :eq:`eq:decorrelated_coadd` is considered)
 
-.. math:
-  {\bf C}_\mathrm{dec} =& \boldsymbol{\Phi} \\
-  \boldsymbol{\phi}_\mathrm{dec} =& {\bf I}
+.. math::
+  {\bf C}_\mathrm{dec} =& \, \boldsymbol{\Phi} \\
+  \boldsymbol{\phi}_\mathrm{dec} =& \, {\bf I}
 
 and
 
-.. math:
-  {\bf C}_\mathrm{dec} =& {\bf I} \\
-  \boldsymbol{\phi}_\mathrm{dec} =& \boldsymbol{\Phi}^{1/2}
+.. math::
+  {\bf C}_\mathrm{dec} =& \, {\bf I} \\
+  \boldsymbol{\phi}_\mathrm{dec} =& \, \boldsymbol{\Phi}^{1/2}
 
 The former has a constant delta function PSF (recall that the pixel response is still embedded in the model) and highly correlated noise; the latter has white, uncorrelated noise and a non-compact PSF that can vary significantly from pixel to pixel.  Nevertheless, intuition suggests that it should be possible to achieve a solution in which the effective PSF is compact and fully continuous or piecewise continuous over large areas while the uncertainty is nondiagonal only in the neighborhood of boundary regions where the number of input images changes.
 
@@ -284,7 +284,7 @@ Unfortunately, a general algorithm for computing the decorrelation factorization
 Kaiser Coadds
 -------------
 
-If the input images to a likelihood coadd meet certain restrictive conditions, an algorithm developed by [Kaiser2002]_ (and rediscovered by [Zackay2015]_) can be used to build decorrelated coadd.  These conditions include:
+If the input images to a likelihood coadd meet certain restrictive conditions, an algorithm developed by [Kaiser2001]_ (and rediscovered by [Zackay2015]_) can be used to build decorrelated coadd.  These conditions include:
 
 - The noise in the input images must be white and uncorrelated.
 - The PSFs of the input images must (individually) be spatially constant.
@@ -328,7 +328,7 @@ The solution is trivial (and unique, assuming a normalized PSF):
     }\\
   C_\mathrm{ksr} =& \frac{1}{\sum_i C_i^{-1}}
 
-The equivalent for \boldsymbol{\Psi} and :eq:`eq:decorrelated_coadd` is
+The equivalent for :math:`\boldsymbol{\Psi}` and :eq:`eq:decorrelated_coadd` is
 
 .. math::
   \tilde{\Psi}({\bf u}) = \sum_i
@@ -353,9 +353,9 @@ with solution
       }
     }
 
-The problem with the Kaiser algorithm is its assumptions, which are simply invalid for any realistic coadd.  While the noise in an input image may be white in the neighborhood of faint sources, most images contain brighter objects (and faint objects near brigher objects as well).  And it is never uncorrelated once the image has been resampled to the coadd coordinate system.  The noise assumptions by themselves are not too restrictive, however; the Kaiser algorithm is not optimal when these conditions are not met, but we only care deeply about optimality in the neighborhood of faint sources.  And ignoring additional covariance due to warping is no different from our usual approach with direct coadds.
+The problem with the Kaiser algorithm is its assumptions, which are simply invalid for any realistic coadd.  While the noise in an input image may be white in the neighborhood of faint sources, most images contain brighter objects (and faint objects near brigher objects as well).  In addition, the noise is never uncorrelated once the image has been resampled to the coadd coordinate system.  The noise assumptions by themselves are not too restrictive, however; the Kaiser algorithm is not optimal when these conditions are not met, but we only care deeply about optimality in the neighborhood of faint sources.  And ignoring additional covariance due to warping is no different from our usual approach with direct coadds.
 
-The assumptions that the PSFs and input image set are fixed is more problematic, but this still leaves room for the Kaiser algorithm to be used to build "per object" coadds, in which we build separate coadds each small region in the neighborhood of a single object, and reject any input image that do not fully cover that region.  This would likely necessitate coadding multiple regions multiple times (for overlapping objects), and it isn't as useful as a traditional coadd (especially considering that it can't be used for detection), but it may still have a role to play.
+The assumptions that the PSFs and input image set are fixed are more problematic, but this still leaves room for the Kaiser algorithm to be used to build "per object" coadds, in which we build separate coadds each small region in the neighborhood of a single object, and reject any input image that do not fully cover that region.  This would likely necessitate coadding multiple regions multiple times (for overlapping objects), and it isn't as useful as a traditional coadd (especially considering that it can't be used for detection), but it may still have a role to play.
 
 A more intriguing possibility is that the Kaiser approach could be used as one piece of a larger algorithm to build general decorrelated coadds.  One could imagine an iterative approach to solving :eq:`eq:decorrelated_factorization` and :eq:`eq:decorrelated_coadd` by minimizing a matric such as
 
@@ -385,11 +385,12 @@ Constant PSF Coadds
 
 A simple but potentially useful twist on the decorrelatd coadd approach is to decorrelate only to a predefined constant PSF.  This would produce a coadd with many of the benefits of a PSF-matched coadd, but with no seeing restrictions on the input images and a much smaller final PSF.  Like a PSF-matched coadd, significant pixel correlations could remain in this scenario (it is unclear which approach would have more), but the coadd would enable the measurement of consistent colors and could also serve as a template for difference imaging.  Both of these are cases where having improved depth and a smaller PSF in the coadd could be critical.
 
-Having a consistent PSF across bands is the only way to formally measure a consistent color, but using traditional PSF-matched coadds for this makes such measurements much lower SNR than PSF-convolved model fluxes fit independently to each epoch (or even to direct coadds), which are subject to model bias.  If the constant-PSF coadd is instead generated using the decorrelated coadd approach, the SNR of consistent colors could be much more competitive.
+Having a consistent PSF across bands is the only way to formally measure a consistent color, but using traditional PSF-matched coadds for this ensures these colors will have lower SNR than model-based measurements that operate on individual exposures (which are always at least somewhat biased).  If the constant-PSF coadd is instead generated using the decorrelated coadd approach, the SNR of consistent colors could be much more competitive.
 
 The potential gains for difference imaging are even larger: the PSF size on the coadd puts a lower limit on the PSF size of an input exposure that can be differenced in it, which could require us to throw away or degrade our best images simply because we don't have a coadd good enough to difference with it. [#preconvolution]_  Difference imaging algorithms also become dramatically more complex when noise from the template cannot be neglected when compared with the noise in the exposure being differenced; this requires that the template have a large number of exposures.  This is challenging when traditional PSF-matched coaddition is used and the coadd PSF must be optimized along with the depth, and it may be even more challenging if mitigating chromatic PSF effects requires templates binned in airmass or some other approach that effectively adds new degrees of freedom to template generation.
 
 .. [#preconvolution] The "preconvolution" approach to difference imaging decreases this lower limit (possibly to the point where it is unimportant), but is also an unproven technique.
+
 
 Coadds for Source Detection
 ===========================
@@ -481,7 +482,6 @@ where :math:`T_i(\lambda)` is the normalized system response for observation :ma
 with
 
 .. math::
-  k =& \sum_i {\bf z}_i^T {\bf C}_i^{-1} {\bf z}_i \\
   \boldsymbol{\Psi}_{\beta} =&
     \sum_i \beta_i \boldsymbol{\phi}_i^T {\bf C}_i^{-1} {\bf z}_i \\
   \boldsymbol{\Phi}_{\beta}=&
