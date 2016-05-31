@@ -4,24 +4,24 @@
 Notation and Conventions
 ========================
 
-Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  We assume that all images have already been resampled to a common coordinate system and common photometric units.  Each image is related to the true sky :math:`f({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf s})` by
+Given multiple overlapping images :math:`\{z_1({\bf r}), z_2({\bf r}), ...\}`, we designate by :math:`R({\bf r})` the set of image indices that overlap a point on the sky :math:`{\bf r}`.  We assume that all images have already been resampled to a common coordinate system and common photometric units.  Each image is related to the true sky :math:`f({\bf r})` via its point spread function (PSF) :math:`\phi_i({\bf r}, {\bf t})` by
 
 .. math::
-  z_i({\bf r}) = \int \! d^2{\bf s} \phi_i({\bf r}, {\bf s}) \, f({\bf s})
+  z_i({\bf r}) = \int \! d^2{\bf t} \phi_i({\bf r}, {\bf t}) \, f({\bf t})
     + \mathrm{noise}
   :label: eq:psf_definition_continuous
 
-It will be convenient to rewrite this integral as a sum, and hence define the PSF and sky as discrete quantities rather than continuous functions (note that :math:`{\bf r}` already only takes discrete values).  The true :math:`f` has power at arbitrarily high frequencies, so we cannot simply sample it on a grid.  But the PSF does not; we can always choose some grid with points :math:`{\bf t}` upon which we can sample the PSF and exactly reconstruct it with Sinc interpolation:
+It will be convenient to rewrite this integral as a sum, and hence define the PSF and sky as discrete quantities rather than continuous functions (note that :math:`{\bf r}` already only takes discrete values).  The true :math:`f` has power at arbitrarily high frequencies, so we cannot simply sample it on a grid.  But the PSF does not; we can always choose some grid with points :math:`{\bf s}` upon which we can sample the PSF and exactly reconstruct it with Sinc interpolation:
 
 .. math::
   \phi_i({\bf r}, {\bf t}) = \sum_{\bf s} \phi_i({\bf r}, {\bf s})
-    \, \mathrm{sinc}({\bf s} - {\bf t})
+    \, \mathrm{sinc}({\bf t} - {\bf s})
 
 We can then insert this into :eq:`eq:psf_definition_continuous`, and reorder the sum and integral:
 
 .. math::
   z_i({\bf r}) = \sum_{\bf t} \phi_i({\bf r}, {\bf t}) \int \! d^2{\bf s} \,
-    \mathrm{sinc}({\bf s} - {\bf t}) \, f({\bf s})
+    \mathrm{sinc}({\bf t} - {\bf s}) \, f({\bf s})
     + \mathrm{noise}
 
 This lets us identify the *sinc-convolved sky* :math:`h` as
@@ -65,7 +65,7 @@ This notation uses function arguments for spatial indices and subscripts for qua
 In matrix notation, :eq:`eq:psf_definition` is simply
 
 .. math::
-  {\bf z}_i = \boldsymbol{\phi}_i {\bf h}
+  {\bf z}_i = \boldsymbol{\phi}_i {\bf h} + \mathrm{noise}
 
 Note that in matrix notation we continue to use subscripts to refer to exposure indices, not spatial indices; at no point will we use matrix notation to represent a sum over exposure indices.
 
@@ -128,7 +128,7 @@ In PSF-matched coaddition, input images are convolved by a kernel that matches t
   \sum_{\bf u} \! K_i({\bf r}, {\bf u}) \, \phi_i({\bf u}, {\bf s})
     = \phi_\mathrm{pm}({\bf r}-{\bf s})
 
-Typically :math:`K` is parametrized as a smoothly varying linear combination of basis functions.  The details of fitting it given a target coadd PSF and input image PSF models is beyond the scope of this document.
+Typically :math:`K` is parametrized as a smoothly varying linear combination of basis functions.  The details of fitting it given a target coadd PSF and input image PSF models is beyond the scope of this document; see e.g. [Alard1998]_ for more information.
 
 Because deconvolution is (at best) noisy, convolution with :math:`K_i` will generally increase the size of the PSF.  This highlights the big disadvantage of PSF-matched coadds: the images with the best seeing must be degraded to match a target PSF whose sizes is determined by the worst of the images to be included in the coadd.  Thus PSF-matched coadds must either include only the best-seeing images (sacrificing depth) or suffer from a worst-case coadd PSF.
 
@@ -235,7 +235,7 @@ Specifically, we assume a factorization of the form
     \boldsymbol{\phi}_\mathrm{dec}
   :label: eq:decorrelated_factorization
 
-Where :math:`\boldsymbol{\phi}_\mathrm{dec}` is a compact kernel and :math:`{\bf C}_\mathrm{dec}` is a nearly matrix.  Given that we have identified :math:`\boldsymbol{\Phi}` as representing the (inverse) covariance matrix of a likelihood coadd, this factorization essentially represents an attempt to *decorrelate* the noise on the likelihood coadd.  This is not quite sufficient, however; we also need to simultaneously solve for :math:`{\bf z}_\mathrm{dec}`` in
+Where :math:`\boldsymbol{\phi}_\mathrm{dec}` is a compact kernel and :math:`{\bf C}_\mathrm{dec}` is a nearly diagonal matrix.  Given that we have identified :math:`\boldsymbol{\Phi}` as representing the (inverse) covariance matrix of a likelihood coadd, this factorization essentially represents an attempt to *decorrelate* the noise on the likelihood coadd.  This is not quite sufficient, however; we also need to simultaneously solve for :math:`{\bf z}_\mathrm{dec}`` in
 
 .. math::
   \boldsymbol{\Psi} = \boldsymbol{\phi}_\mathrm{dec}^T
@@ -265,7 +265,7 @@ Because we have merely specified that :math:`{\bf C}_\mathrm{dec}` be "nearly" d
 These are generally competing goals, as can be seen from the limiting cases (which are not necessarily solutions, especially when :eq:`eq:decorrelated_coadd` is considered)
 
 .. math::
-  {\bf C}_\mathrm{dec} =& \, \boldsymbol{\Phi} \\
+  {\bf C}_\mathrm{dec} =& \, \boldsymbol{\Phi}^{-1} \\
   \boldsymbol{\phi}_\mathrm{dec} =& \, {\bf I}
 
 and
@@ -349,9 +349,16 @@ with solution
       \sum_i \tilde{\phi}^*_i({\bf u}) \, \tilde{z}_i({\bf u}) \, C_i^{-1}
     }{
       \sqrt{
-        \sum_i \left| \tilde{\phi}_i({\bf u}) \right|^2 \, C_i^{-1}
+        \left[
+          \sum_i \left| \tilde{\phi}_i({\bf u}) \right|^2 \, C_i^{-1}
+        \right]
+        \left[
+          \sum_i C_i^{-1}
+        \right]
       }
     }
+
+This differs from [Zackay2015]_\'s Eqn. 7 because they have redefined the flux units of the coadd to achieve unit variance on the coadd.
 
 The problem with the Kaiser algorithm is its assumptions, which are simply invalid for any realistic coadd.  While the noise in an input image may be white in the neighborhood of faint sources, most images contain brighter objects (and faint objects near brigher objects as well).  In addition, the noise is never uncorrelated once the image has been resampled to the coadd coordinate system.  The noise assumptions by themselves are not too restrictive, however; the Kaiser algorithm is not optimal when these conditions are not met, but we only care deeply about optimality in the neighborhood of faint sources.  And ignoring additional covariance due to warping is no different from our usual approach with direct coadds.
 
@@ -378,7 +385,6 @@ A more intriguing possibility is that the Kaiser approach could be used as one p
       \right|
 
 where :math:`\boldsymbol{\phi}_\mathrm{dec}` is parametrized as a smoothly-varying interpolation of a set of kernel basis functions, and :math:`\lambda` controls how strongly off-diagonal elements of :math:`{\bf C}_\mathrm{dec}^{-1}` are penalized.  This is a massive optimization problem if applied to a full coadd patch, but the structure of :math:`\boldsymbol{\Phi}` only indirectly couples pixels that are more than twice the PSF width apart; this suggests we could proceed by iteratively solving small regions independently -- if we have a good guess at an approximate solution.  The Kaiser algorithm provides exactly this: we can use the Kaiser method to estimate the PSF, and a diagonal covariance matrix at multiple points on the image, and then simply interpolate between them to generate our initial guess.  Just imposing the Kaiser PSF (or a small perturbation to it) as the final PSF may also be feasible.  This would only require us to solve for :math:`{\bf C}_\mathrm{dec}^{-1}` and :math:`{\bf z}_\mathrm{dec}`, dramatically reducing the scale of the problem.
-
 
 Constant PSF Coadds
 -------------------
@@ -454,7 +460,7 @@ The point-source SNR at position :math:`\boldsymbol{\mu}` is then
       }
   :label: eq:detection_map
 
-To detect point sources, we simply threshold on :math:`\boldsymbol{\nu}`, which we call a *detection map*.   We can construct this from the components of a likelihood coadd with a crucial simplification: we only require the diagonal of :math:`\boldsymbol{\Phi}`, making what had been a computationally infeasible method quite practical.  This holds only because we have assumed an isolated point source, however; optimal detection of extended sources or blended sources would require at least some off-diagonal elements of :math:`\boldsymbol{\Phi}`.  In practice, we instead just look for multiple peaks in above-threshold regions in $\boldsymbol{\nu} as defined above, and bin the image to detect extended low-surface-brightness sources.
+To detect point sources, we simply threshold on :math:`\boldsymbol{\nu}`, which we call a *detection map*.   We can construct this from the components of a likelihood coadd with a crucial simplification: we only require the diagonal of :math:`\boldsymbol{\Phi}`, making what had been a computationally infeasible method quite practical.  This holds only because we have assumed an isolated point source, however; optimal detection of extended sources or blended sources would require at least some off-diagonal elements of :math:`\boldsymbol{\Phi}`.  In practice, we instead just look for multiple peaks in above-threshold regions in :math:`\boldsymbol{\nu}` as defined above, and bin the image to detect extended low-surface-brightness sources.
 
 
 Optimal Multi-Band Detection
@@ -462,7 +468,8 @@ Optimal Multi-Band Detection
 
 Just as optimal detection in monochromatic images requires that we konw the signal of interest (a point source with a known PSF), optimal detection over multi-band observations requires that we know both the spectral energy distribution (SED) of the target objects and the bandpass.  More precisely, we need to know the integral of these quantities:
 
-\beta_i = \int S(\lambda) ,\ T_i(\lambda) \, d\lambda
+.. math::
+  \beta_i = \int S(\lambda) ,\ T_i(\lambda) \, d\lambda
 
 where :math:`T_i(\lambda)` is the normalized system response for observation :math:`i` and :math:`S(\lambda)` is the normalized SED of the target source.  The point source likelihood is then
 
@@ -611,6 +618,8 @@ Zackay/Ofek Coadd
 
 References
 ==========
+
+.. [Alard1998] `Alard & Lupton, 1998 <http://adsabs.harvard.edu/abs/1998ApJ...503..325A>`_. *A Method for Optimal Image Subtraction.* ApJ, 503, 325.
 
 .. [Szalay1999] `Szalay, Connolly, & Szokoly, 1999 <http://adsabs.harvard.edu/abs/1999AJ....117...68S>`_. *Simultaneous Multicolor Detection of Faint Galaxies in the Hubble Deep Field.* AJ, 117, 68.
 
