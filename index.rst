@@ -159,7 +159,7 @@ A common -- but often misguided -- practice in coaddition is to use a nonlinear 
 
 This is not true when input images have different PSFs, as in direct coaddition.  Building a direct coadd with median or any amount of sigma-clipping will typically result in the cores of brighter stars being clipped in the the best seeing images, resulting in a flux-dependent (i.e. ill-defined) PSF.  Even extremely soft (e.g. 10-sigma) clipping is unsafe; the usual Gaussian logic concerning the number of expected outliers is simply invalid when the inputs are not drawn from the same distribution.
 
-The presence of correlated noise means that even PSF-matched coadds cannot be built naively with nonlinear statistics.  In PSF-matched coadds, all pixels at the same point are drawn from distributions that have the same mean, but they are these are not identical distributions.  As a result, nonlinear statistics do not produce an ill-defined PSF when the inputs are PSF-matched, but their outlier rejection properties do not operate as one would naively expect, making it hard to predict how well any statistic will actually perform at eliminating artifacts (or not eliminating valid data).  Nonlinear statistics also make it impossible to correctly propagate uncertainty to coadds, as long as they are used to compute each coadd pixel independently.
+The presence of correlated noise means that even PSF-matched coadds cannot be built naively with nonlinear statistics.  In PSF-matched coadds, all pixels at the same point are drawn from distributions that have the same mean, but they are not identical distributions.  As a result, nonlinear statistics do not produce an ill-defined PSF when the inputs are PSF-matched, but their outlier rejection properties do not operate as one would naively expect, making it hard to predict how well any statistic will actually perform at eliminating artifacts (or not eliminating valid data).  Nonlinear statistics also make it impossible to correctly propagate uncertainty to coadds, as long as they are used to compute each coadd pixel independently.
 
 
 Optimal Coaddition Algorithms
@@ -182,7 +182,7 @@ The log likelihood of a single input image :math:`{\bf z}_i` is (in matrix notat
       {\bf z}_i - \boldsymbol{\phi}_i{\bf h}
     \right]
 
-The joint likelihood for all images is just the product of the per-image liklehoods, since the images are independent.  The joint log likelihood is thus just the sum of the input log likelihoods:
+The joint likelihood for all images is just the product of the per-image likelihoods since the images are independent. The joint log likelihood is thus the sum of the input log likelihoods:
 
 .. math::
   L = \sum_i L_i
@@ -235,7 +235,7 @@ Specifically, we assume a factorization of the form
     \boldsymbol{\phi}_\mathrm{dec}
   :label: eq:decorrelated_factorization
 
-Where :math:`\boldsymbol{\phi}_\mathrm{dec}` is a compact kernel and :math:`{\bf C}_\mathrm{dec}` is a nearly diagonal matrix.  Given that we have identified :math:`\boldsymbol{\Phi}` as representing the (inverse) covariance matrix of a likelihood coadd, this factorization essentially represents an attempt to *decorrelate* the noise on the likelihood coadd.  This is not quite sufficient, however; we also need to simultaneously solve for :math:`{\bf z}_\mathrm{dec}`` in
+where :math:`\boldsymbol{\phi}_\mathrm{dec}` is a compact kernel and :math:`{\bf C}_\mathrm{dec}` is a nearly diagonal matrix.  Given that we have identified :math:`\boldsymbol{\Phi}` as representing the (inverse) covariance matrix of a likelihood coadd, this factorization essentially represents an attempt to *decorrelate* the noise on the likelihood coadd.  This is not quite sufficient, however; we also need to simultaneously solve for :math:`{\bf z}_\mathrm{dec}`` in
 
 .. math::
   \boldsymbol{\Psi} = \boldsymbol{\phi}_\mathrm{dec}^T
@@ -364,7 +364,7 @@ The problem with the Kaiser algorithm is its assumptions, which are simply inval
 
 The assumptions that the PSFs and input image set are fixed are more problematic, but this still leaves room for the Kaiser algorithm to be used to build "per object" coadds, in which we build separate coadds each small region in the neighborhood of a single object, and reject any input image that do not fully cover that region.  This would likely necessitate coadding multiple regions multiple times (for overlapping objects), and it isn't as useful as a traditional coadd (especially considering that it can't be used for detection), but it may still have a role to play.
 
-A more intriguing possibility is that the Kaiser approach could be used as one piece of a larger algorithm to build general decorrelated coadds.  One could imagine an iterative approach to solving :eq:`eq:decorrelated_factorization` and :eq:`eq:decorrelated_coadd` by minimizing a matric such as
+A more intriguing possibility is that the Kaiser approach could be used as one piece of a larger algorithm to build general decorrelated coadds.  One could imagine an iterative approach to solving :eq:`eq:decorrelated_factorization` and :eq:`eq:decorrelated_coadd` by minimizing a metric such as
 
 .. math::
   q = \left|
@@ -389,7 +389,7 @@ where :math:`\boldsymbol{\phi}_\mathrm{dec}` is parametrized as a smoothly-varyi
 Constant PSF Coadds
 -------------------
 
-A simple but potentially useful twist on the decorrelated coadd approach is to decorrelate only to a predefined constant PSF.  This would produce a coadd with many of the benefits of a PSF-matched coadd, but with no seeing restrictions on the input images and a much smaller final PSF.  Like a PSF-matched coadd, significant pixel correlations could remain in this scenario (it is unclear which approach would have more), but the coadd would enable the measurement of consistent colors and could also serve as a template for difference imaging.  Both of these are cases where having improved depth and a smaller PSF in the coadd could be critical.
+A simple but potentially useful twist on the decorrelated coadd approach is to decorrelate only to a predefined constant PSF.  This would produce a coadd with many of the benefits of a PSF-matched coadd, but with no seeing restrictions on the input images and a much smaller final PSF.  Like a PSF-matched coadd, significant pixel correlations could remain in this scenario (it is unclear which approach would have more), but this coadd would enable the measurement of consistent colors and could also serve as a template for difference imaging.  Both of these are cases where having improved depth and a smaller PSF in the coadd could be critical.
 
 Having a consistent PSF across bands is the only way to formally measure a consistent color, but using traditional PSF-matched coadds for this ensures these colors will have lower SNR than model-based measurements that operate on individual exposures (which are always at least somewhat biased).  If the constant-PSF coadd is instead generated using the decorrelated coadd approach, the SNR of consistent colors could be much more competitive.
 
@@ -466,10 +466,10 @@ To detect point sources, we simply threshold on :math:`\boldsymbol{\nu}`, which 
 Optimal Multi-Band Detection
 ----------------------------
 
-Just as optimal detection in monochromatic images requires that we konw the signal of interest (a point source with a known PSF), optimal detection over multi-band observations requires that we know both the spectral energy distribution (SED) of the target objects and the bandpass.  More precisely, we need to know the integral of these quantities:
+Just as optimal detection in monochromatic images requires that we know the signal of interest (a point source with a known PSF), optimal detection over multi-band observations requires that we know both the spectral energy distribution (SED) of the target objects and the bandpass.  More precisely, we need to know the integral of these quantities:
 
 .. math::
-  \beta_i = \int S(\lambda) ,\ T_i(\lambda) \, d\lambda
+  \beta_i = \int S(\lambda) \, T_i(\lambda) \, d\lambda
 
 where :math:`T_i(\lambda)` is the normalized system response for observation :math:`i` and :math:`S(\lambda)` is the normalized SED of the target source.  The point source likelihood is then
 
