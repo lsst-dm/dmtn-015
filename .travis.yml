@@ -1,8 +1,20 @@
 sudo: false
 language: python
-python:
-      - 3.4
-install: "pip install -r requirements.txt"
-script: "make html"
-notifications:
-      email: false
+matrix:
+  include:
+    - python: "3.5"
+      env: LTD_MASON_BUILD=true
+install:
+  - pip install -r requirements.txt
+  - pip install "ltd-mason>=0.2,<0.3"
+script:
+  - sphinx-build -b html -a -n -d _build/doctree . _build/html
+after_success:
+  - ltd-mason-travis --html-dir _build/html
+env:
+  global:
+    - LTD_MASON_BUILD=false  # disable builds in regular text matrix
+    - LTD_MASON_PRODUCT="dmtn-015"
+    # Add AWS and LTD Keeper credentials as encrypted secrets here
+    - secure: "0DznZDR+CDI857asys3Kly+lQzgyuwyOZWO+k4tE3G9o0jnFU21EduXW2jmln461AwAKs261yZzqAVTrMhf6A0Nk3iQgWm48XNpL9YC43GFqKcvXspVR5qj2Hm10Rc3HzC0wOP2FjXq1LpkYbWTOtp4EGj64HsfD/FAHPIbGf9b8S8qMvqKv3G16Y/cdDRr/QwuO1YIi7lEJvka4CTb6QXk9IxwhiHosLvZOLI8A/clClqYTX0s+ApRnJq3fax6fWEr4PqDIcswHxEUVnKy4iYXIIuEYXonfBA0OZ8YJZqfYzyHp+PcfmRZSh55SuYvHhynP+krv4HTdlVIIiH/Ro5pWUVGt5UIPJCP5cA6ULVOY24LLnXfl1r2UEur8j2nmkQEd9WaMDxayisATapGA1Tv6wrM8yhWInfSKfxorfikyQHKx6d7bxGq5IG69GWC+BY9PnpFsAnYHR/+r9xOdNPWJcQo3BXAQT0x+j9r4WPEzsD6LAo6qS8XZYOTt5YBdZqYFQ/3oONbqg91t0057Ecmsjna7eUbtES1QJl/OHb+hEatcsyWx1jiT+Z/ejtHSlgwUHLlQ3dPl4Z3glGKitaZ80YEL61UZxJ/WYrcbFVE1eR8HZcKyPUVuuy+JvjP9bUrICDSuRRdT7cU46At752t3nbIIs3ptxVbmOzqAgdM="
+    - secure: "IuvY5uz1PVbjFZW7iXSaESZsxqLLb1KypPdKkmMWvZSbHLpJWKM41CIGw49Nps8ZWwPuZneWOcDERw4tWIwLTGa9bWtPExyLX6aib3bz4qIj2t2BFZABgqD2AKaariTiCLL/Ai0s1N3W1bW5gI+vBEtzBQSF4/cf3bcheAWril5g4deHcBvADYgcfDUqQVxgqGpXxylXIrPNN9CCp8ZEDBaVGOcJ5KA+9L1CIeYX17gE7BOloNrEn4Q/wSl9CAGltZNDsjxhD+bfvmbaUxXV9Cfy3kY02VWKlL+DIo9S0UzvrKHOBPDuycUULxC2Kg2IaMTetrAXJM52KcqbD7AYCmkiKwhfkAYcjH1OpxZ8Qf4UkqAT2we4XWcB0xOWU7epk2zYjOtBlJB3aKq3vxLH6TCLIMRckLTnrkAtDlxpQiqgfNugwNbxosC4SPKpHvN2CyQ/Ea54yfvWOM5Pyy3d7s4lMZOj5+7oK7l6fZ595db/a6asiL3DXZJbbMCGhk9ILkPlrAtbJD33i3kphzjF14e6caSQk/F+hRLrtlKU/pVx5hj5tm4fH4cnvgH0yoz65NuyWn29ZyJDXHdxcvdDAKbdw8DbaHBPPk1+ePEGX7yqcUUIRaKyTiFhSb/1oGGPhHdmEQ7ALzBhT+y34vrep0mfW6Jisu1NTDUHD/2PcIY="
