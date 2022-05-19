@@ -83,7 +83,7 @@ The simplest way to build a coadd is to simply form a linear combination of the 
   z_\mathrm{dir}({\bf r}) = \sum_{i \in R({\bf r})} w_i({\bf r}) \, z_i({\bf r})
   :label: eq:dir_coadd_def
 
-where :math:`w_i` is an arbitrary weight for each image, defined to sum to one at each point.  We cannot assume the weights are constant over a single input image; this would make it impossible for the weights to sum to one on both sides of a boundary in which the number of input images changes.  It is equally important that the weight function vary only on scales much larger than the size of the PSF; without this it the coadd has no well-defined effective PSF.  The weight can be chosen to optimize some measure of signal-to-noise ratio (SNR) on the coadd, popular choices include
+where :math:`w_i` is an arbitrary weight for each image, defined to sum to one at each point.  We cannot assume the weights are constant over a single input image; this would make it impossible for the weights to sum to one on both sides of a boundary in which the number of input images changes.  It is equally important that the weight function vary only on scales much larger than the size of the PSF; without this the coadd has no well-defined effective PSF.  The weight can be chosen to optimize some measure of signal-to-noise ratio (SNR) on the coadd, popular choices include
 
 .. math::
   w_i \propto \frac{1}{\sigma_i^2}
