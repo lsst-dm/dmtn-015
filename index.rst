@@ -1,4 +1,11 @@
-:tocdepth: 1
+#################
+Flavors of Coadds
+#################
+
+.. abstract::
+
+   A glossary of different kinds of coadded images, with brief descriptions of the algorithms behind them.
+
 
 
 Notation and Conventions
