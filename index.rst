@@ -7,6 +7,7 @@ Flavors of Coadds
    A glossary of different kinds of coadded images, with brief descriptions of the algorithms behind them.
 
 
+DOI: `10.71929/rubin/2583432 <https://doi.org/10.71929/rubin/2583432>`_
 
 Notation and Conventions
 ========================
