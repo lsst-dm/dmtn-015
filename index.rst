@@ -135,7 +135,7 @@ In PSF-matched coaddition, input images are convolved by a kernel that matches t
   \sum_{\bf u} \! K_i({\bf r}, {\bf u}) \, \phi_i({\bf u}, {\bf s})
     = \phi_\mathrm{pm}({\bf r}-{\bf s})
 
-Typically :math:`K` is parametrized as a smoothly varying linear combination of basis functions.  The details of fitting it given a target coadd PSF and input image PSF models is beyond the scope of this document; see e.g. [Alard1998]_ for more information.
+Typically :math:`K` is parametrized as a smoothly varying linear combination of basis functions.  The details of fitting it given a target coadd PSF and input image PSF models is beyond the scope of this document; see e.g., :cite:t:`1998ApJ...503..325A` for more information.
 
 Because deconvolution is (at best) noisy, convolution with :math:`K_i` will generally increase the size of the PSF.  This highlights the big disadvantage of PSF-matched coadds: the images with the best seeing must be degraded to match a target PSF whose sizes is determined by the worst of the images to be included in the coadd.  Thus PSF-matched coadds must either include only the best-seeing images (sacrificing depth) or suffer from a worst-case coadd PSF.
 
@@ -291,7 +291,7 @@ Unfortunately, a general algorithm for computing the decorrelation factorization
 Kaiser Coadds
 -------------
 
-If the input images to a likelihood coadd meet certain restrictive conditions, an algorithm developed by [Kaiser2001]_ (and rediscovered by [Zackay2015]_) can be used to build decorrelated coadd.  These conditions include:
+If the input images to a likelihood coadd meet certain restrictive conditions, an algorithm developed by :cite:t:`Kaiser04` (and rediscovered by :cite:t:`2017ApJ...836..188Z`) can be used to build decorrelated coadd.  These conditions include:
 
 - The noise in the input images must be white and uncorrelated.
 - The PSFs of the input images must (individually) be spatially constant.
@@ -365,7 +365,7 @@ with solution
       }
     }
 
-This differs from [Zackay2015]_\'s Eqn. 7 because they have redefined the flux units of the coadd to achieve unit variance on the coadd.
+This differs from :cite:t:`2017ApJ...836..188Z` \'s Eqn. 7 because they have redefined the flux units of the coadd to achieve unit variance on the coadd.
 
 The problem with the Kaiser algorithm is its assumptions, which are simply invalid for any realistic coadd.  While the noise in an input image may be white in the neighborhood of faint sources, most images contain brighter objects (and faint objects near brigher objects as well).  In addition, the noise is never uncorrelated once the image has been resampled to the coadd coordinate system.  The noise assumptions by themselves are not too restrictive, however; the Kaiser algorithm is not optimal when these conditions are not met, but we only care deeply about optimality in the neighborhood of faint sources.  And ignoring additional covariance due to warping is no different from our usual approach with direct coadds.
 
@@ -517,7 +517,7 @@ In practice, the differences in throughput for different observations with the s
 Chi-Squared Coadds
 ------------------
 
-An alternate approach to multi-band coaddition developed by [Szalay1999]_ is to instead build a coadd that tests the null hypothesis that a pixel is pure sky.  While [Szalay1999]_ does not specify fully how to handle the spatial dimensions, we can combine their method with the likelihood coadd approach above.  This yields a detection map that is exactly the same as :eq:`eq:detection_map`, but with :math:`\Psi` and :math:`\Phi` summed over images from multiple bandpasses.  The probability distribution of :math:`\nu^2` is then a :math:`\chi^2` distribution, allowing the hypothesis test to be carried out by filtering on a monotonic function of the :math:`\nu`.
+An alternate approach to multi-band coaddition developed by :cite:t:`1999AJ....117...68S` is to instead build a coadd that tests the null hypothesis that a pixel is pure sky.  While :cite:t:`1999AJ....117...68S` does not specify fully how to handle the spatial dimensions, we can combine their method with the likelihood coadd approach above.  This yields a detection map that is exactly the same as :eq:`eq:detection_map`, but with :math:`\Psi` and :math:`\Phi` summed over images from multiple bandpasses.  The probability distribution of :math:`\nu^2` is then a :math:`\chi^2` distribution, allowing the hypothesis test to be carried out by filtering on a monotonic function of the :math:`\nu`.
 
 This is equivalent to setting :math:`\beta_i=1` in :eq:`eq:multiband_detection`, which is not the same as assuming a flat SED; in the background-dominated limit, it is actually the same as assuming that objects have the same SED as the sky.  From this perspective, it is clear that :math:`\chi^2` coadds are not formally optimal for the detection of most sources, but they may be close enough that detection on them with a slightly lower threshold may be more computationally efficient than trying a large library of proposed SEDs.
 
@@ -540,12 +540,12 @@ Glossary
 .. _chisq_coadd:
 
 Chi-Squared Coadd
-  A cross-band coadd that is designed for detecting objects by rejecting the null hypothesis that a pixel contains only sky.  See [Szalay1999]_.
+  A cross-band coadd that is designed for detecting objects by rejecting the null hypothesis that a pixel contains only sky.  See :cite:t:`1999AJ....117...68S`.
 
 .. _coaddpsf:
 
 CoaddPsf
-  A procedure for generating the PSF model at a point on a direct coadd by lazily evaluating the PSF models of the input at that point, then warping and combining them with the same weights used to build the coadd itself.  Originally developed by [Jee2011]_ as part of :ref:`StackFit <stackfit>`.
+  A procedure for generating the PSF model at a point on a direct coadd by lazily evaluating the PSF models of the input at that point, then warping and combining them with the same weights used to build the coadd itself.  Originally developed by :cite:t:`2011PASP..123..596J` as part of :ref:`StackFit <stackfit>`.
 
 .. _constant_psf_coadd:
 
@@ -580,7 +580,7 @@ Good-Seeing Coadd
 .. _kaiser_coadd:
 
 Kaiser Coadd
-  An optimal coadd built by decorrelating a :ref:`Likelihood Coadd <likelihood_coadd>` after assuming input images have uncorrelated white noise, constant PSFs, and no missing pixels or boundaries.  Origin is [Kaiser2001]_, an unpublished Pan-STARRS white paper.  Special case of :ref:`Decorrelated Coadd <decorrelated_coadd>`.
+  An optimal coadd built by decorrelating a :ref:`Likelihood Coadd <likelihood_coadd>` after assuming input images have uncorrelated white noise, constant PSFs, and no missing pixels or boundaries.  Origin is :cite:t:`Kaiser04`, an unpublished Pan-STARRS white paper.  Special case of :ref:`Decorrelated Coadd <decorrelated_coadd>`.
 
 .. _likelihood_coadd:
 
@@ -595,7 +595,7 @@ MultiFit
 .. _proper_image:
 
 Proper Image
-  An image with uncorrelated white noise; see [Zackay2015]_.
+  An image with uncorrelated white noise; see :cite:t:`2017ApJ...836..188Z`.
 
 .. _psf_matched_coadd:
 
@@ -605,7 +605,7 @@ PSF-Matched Coadd
 .. _stackfit:
 
 StackFit
-  An approach to source measurement (especially weak lensing shear estimation) that fits models to :ref:`Direct Coadds <direct_coadd>` after convolving with a PSF model generated using the :ref:`CoaddPsf <coaddpsf>` approach, developed by [Jee2011]_.  This avoids B-mode (and other) systematics that arise from poor modeling of PSF discontinuities, but is still lossy.  Contrast with :ref:`MultiFit <multifit>`.
+  An approach to source measurement (especially weak lensing shear estimation) that fits models to :ref:`Direct Coadds <direct_coadd>` after convolving with a PSF model generated using the :ref:`CoaddPsf <coaddpsf>` approach, developed by :cite:t:`2011PASP..123..596J`.  This avoids B-mode (and other) systematics that arise from poor modeling of PSF discontinuities, but is still lossy.  Contrast with :ref:`MultiFit <multifit>`.
 
 .. _sufficient_statistic:
 
@@ -620,18 +620,10 @@ Template
 .. _zackay_ofek_coadd:
 
 Zackay/Ofek Coadd
-  See :ref:`Kaiser Coadd <kaiser_coadd>`; from [Zackay2015]_, which indepenently derived Kaiser's result.
+  See :ref:`Kaiser Coadd <kaiser_coadd>`; from :cite:t:`2017ApJ...836..188Z`, which indepenently derived Kaiser's result.
 
 
 References
 ==========
 
-.. [Alard1998] `Alard & Lupton, 1998 <http://adsabs.harvard.edu/abs/1998ApJ...503..325A>`_. *A Method for Optimal Image Subtraction.* ApJ, 503, 325.
-
-.. [Szalay1999] `Szalay, Connolly, & Szokoly, 1999 <http://adsabs.harvard.edu/abs/1999AJ....117...68S>`_. *Simultaneous Multicolor Detection of Faint Galaxies in the Hubble Deep Field.* AJ, 117, 68.
-
-.. [Jee2011] `Jee & Tyson, 2011 <http://adsabs.harvard.edu/abs/2011PASP..123..596J>`_. *Toward Precision LSST Weak-Lensing Measurement.* PASP, 123, 596.
-
-.. [Kaiser2001] Kaiser, 2001.  *Addition of Images with Varying Seeing.* PSDC-002-011-xx.
-
-.. [Zackay2015] `Zackay & Ofek, 2015 <http://adsabs.harvard.edu/abs/2015arXiv151206879Z>`_.  *How to coadd images? II. A coaddition image that is optimal for any purpose in the background dominated noise limit.* `arXiv:1512.06879 <http://arxiv.org/abs/1512.06879>`_
+.. bibliography::
